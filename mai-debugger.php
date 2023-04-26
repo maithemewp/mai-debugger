@@ -146,10 +146,10 @@ add_action( 'admin_bar_init', function() {
  *
  * @return void
  */
-add_action( 'wp_head', function() {
-	$value = [
-		'test' => 'Okay',
-	];
+// add_action( 'wp_head', function() {
+// 	$value = [
+// 		'test' => 'Okay',
+// 	];
 
-	var_dump( $value );
-});
+// 	dump( $value );
+// });
