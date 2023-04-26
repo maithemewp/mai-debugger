@@ -25,6 +25,9 @@ class FrameCollection implements ArrayAccess, IteratorAggregate, Serializable, C
      */
     private $frames;
 
+    /**
+     * @param array $frames
+     */
     public function __construct(array $frames)
     {
         $this->frames = array_map(function ($frame) {
@@ -175,12 +178,12 @@ class FrameCollection implements ArrayAccess, IteratorAggregate, Serializable, C
         $this->frames = unserialize($serializedFrames);
     }
 
-    public function __serialize()
+    public function __serialize(): array
     {
         return $this->frames;
     }
 
-    public function __unserialize(array $serializedFrames)
+    public function __unserialize(array $serializedFrames): void
     {
         $this->frames = $serializedFrames;
     }

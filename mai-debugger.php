@@ -14,6 +14,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // Must be at the top of the file.
+// use Symfony\Component\VarDumper\VarDumper;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 // Include vendor libraries.
@@ -145,10 +146,10 @@ add_action( 'admin_bar_init', function() {
  *
  * @return void
  */
-// add_action( 'wp_head', function() {
-// 	$value = [
-// 		'test' => 'Okay',
-// 	];
+add_action( 'wp_head', function() {
+	$value = [
+		'test' => 'Okay',
+	];
 
-// 	dump( $value );
-// });
+	var_dump( $value );
+});
