@@ -1,0 +1,8 @@
+{
+  "require": {
+    "php": "^7.2.5 || ^8",
+    "filp/whoops": "^2.14",
+    "symfony/var-dumper": "^5.4.14",
+    "yahnis-elsts/plugin-update-checker": "^5.0"
+  }
+}
