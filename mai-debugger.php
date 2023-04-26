@@ -64,6 +64,9 @@ add_action( 'plugins_loaded', function() {
 	// Setup the updater.
 	$updater = PucFactory::buildUpdateChecker( 'https://github.com/maithemewp/mai-debugger/', __FILE__, 'mai-debugger' );
 
+	// Set the stable branch.
+	$updater->setBranch( 'main' );
+
 	// Maybe set github api token.
 	if ( defined( 'MAI_GITHUB_API_TOKEN' ) ) {
 		$updater->setAuthentication( MAI_GITHUB_API_TOKEN );
