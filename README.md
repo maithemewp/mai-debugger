@@ -1,4 +1,4 @@
-# Mai Debuggger
+# Mai Debugger
 An aggressive debugging plugin with Whoops and Symfony var-dumper.
 
 ## How It Works
