@@ -4,7 +4,7 @@
  * Plugin Name:     Mai Debugger
  * Plugin URI:      https://bizbudding.com/mai-theme/
  * Description:     An aggressive debugging plugin with Whoops and Symfony var-dumper.
- * Version:         0.1.0
+ * Version:         0.1.1
  *
  * Author:          BizBudding
  * Author URI:      https://bizbudding.com
