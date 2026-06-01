@@ -4,7 +4,8 @@
  * Plugin Name:     Mai Debugger
  * Plugin URI:      https://bizbudding.com/mai-theme/
  * Description:     An aggressive debugging plugin with Whoops and Symfony var-dumper.
- * Version:         0.2.0
+ * Version:         0.3.0
+ * Requires PHP:    8.1
  *
  * Author:          BizBudding
  * Author URI:      https://bizbudding.com
@@ -21,7 +22,13 @@ use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 require_once __DIR__ . '/vendor/autoload.php';
 
 // Register the handler.
-if ( ! ( isset( $_GET['maidebugger'] ) && in_array( $_GET['maidebugger'], [ 'off', 'deactivate' ] ) ) ) {
+// Skip in CLI/WP-CLI: Whoops' PrettyPageHandler renders a browser HTML error page and exits,
+// and its error handler turns PHP notices/deprecations into exceptions. Under WP-CLI that
+// swallows command output and aborts before the command runs (e.g. a dependency emitting a
+// PHP 8.4 deprecation would silently kill `wp` output). WP-CLI has its own error reporting.
+$is_cli = ( defined( 'WP_CLI' ) && WP_CLI ) || 'cli' === PHP_SAPI;
+
+if ( ! $is_cli && ! ( isset( $_GET['maidebugger'] ) && in_array( $_GET['maidebugger'], [ 'off', 'deactivate' ], true ) ) ) {
 	$whoops = new \Whoops\Run;
 	$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
 	$whoops->register();
@@ -65,8 +72,7 @@ add_action( 'plugins_loaded', function() {
 	// Setup the updater.
 	$updater = PucFactory::buildUpdateChecker( 'https://github.com/maithemewp/mai-debugger/', __FILE__, 'mai-debugger' );
 
-	// Set the stable branch.
-	$updater->setBranch( 'main' );
+	// No setBranch() = tag-based updates (PUC uses the latest GitHub tag/release).
 
 	// Maybe set github api token.
 	if ( defined( 'MAI_GITHUB_API_TOKEN' ) ) {

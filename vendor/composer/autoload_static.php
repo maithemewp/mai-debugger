@@ -10,7 +10,7 @@ class ComposerStaticInit09a0f7d5159b9722fc55c32722025249
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
-        'f6d4f6bcee7247df6b777884c3e22f98' => __DIR__ . '/..' . '/yahnis-elsts/plugin-update-checker/load-v5p6.php',
+        'bc0af1337b39f0d750e835f5263eb646' => __DIR__ . '/..' . '/yahnis-elsts/plugin-update-checker/load-v5p7.php',
     );
 
     public static $prefixLengthsPsr4 = array (
