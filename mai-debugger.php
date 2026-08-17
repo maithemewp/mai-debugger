@@ -4,7 +4,7 @@
  * Plugin Name:     Mai Debugger
  * Plugin URI:      https://bizbudding.com/mai-theme/
  * Description:     An aggressive debugging plugin with Whoops and Symfony var-dumper.
- * Version:         0.3.0
+ * Version:         0.4.0
  * Requires PHP:    8.1
  *
  * Author:          BizBudding
@@ -28,14 +28,78 @@ require_once __DIR__ . '/vendor/autoload.php';
 // PHP 8.4 deprecation would silently kill `wp` output). WP-CLI has its own error reporting.
 $is_cli = ( defined( 'WP_CLI' ) && WP_CLI ) || 'cli' === PHP_SAPI;
 
-if ( ! $is_cli && ! ( isset( $_GET['maidebugger'] ) && in_array( $_GET['maidebugger'], [ 'off', 'deactivate' ], true ) ) ) {
-	$whoops = new \Whoops\Run;
-	$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+// The `maidebugger` query arg, if any. `off` and `deactivate` are reserved and checked first,
+// so neither can ever be shadowed by a key someone happens to choose.
+$mai_debugger_arg = isset( $_GET['maidebugger'] ) ? (string) $_GET['maidebugger'] : '';
+$mai_debugger_bypass = in_array( $mai_debugger_arg, [ 'off', 'deactivate' ], true );
+
+/**
+ * On a live site, show the error page to whoever holds the key and nobody else.
+ *
+ * Whoops prints file paths, source code and server details straight into the response, which
+ * is fine on a laptop and not fine on a site with visitors. Define MAI_DEBUGGER_KEY in
+ * wp-config.php and the error page only renders for a request carrying it:
+ *
+ *     define( 'MAI_DEBUGGER_KEY', 'some-long-random-string' );
+ *     https://example.com/broken-page/?maidebugger=some-long-random-string
+ *
+ * Everyone else gets WordPress' normal error output. Leave the constant undefined and nothing
+ * changes: the error page shows for every request, which is what you want locally.
+ *
+ * It has to be a key in the URL rather than a capability check. Plugin files run at
+ * wp-settings.php:574 and pluggable.php isn't loaded until :604, so wp_get_current_user() and
+ * every auth function simply do not exist yet. Waiting for them would mean arming Whoops after
+ * plugins_loaded, which is exactly when the errors worth catching tend to fire.
+ *
+ * The key travels in the URL, so it lands in access logs and browser history. Treat it as a
+ * short-lived "let me look at this" token and change it when you're done, not as a credential.
+ */
+$mai_debugger_gated = defined( 'MAI_DEBUGGER_KEY' ) && '' !== (string) MAI_DEBUGGER_KEY;
+$mai_debugger_allowed = ! $mai_debugger_gated || hash_equals( (string) MAI_DEBUGGER_KEY, $mai_debugger_arg );
+
+if ( ! $is_cli && ! $mai_debugger_bypass && $mai_debugger_allowed ) {
+	$whoops = new \Whoops\Run();
+	$whoops->pushHandler( new \Whoops\Handler\PrettyPageHandler() );
 	$whoops->register();
+
+	/**
+	 * Don't let Whoops kill the page over something PHP would have survived.
+	 *
+	 * PHP sorts problems into two piles. Notices, warnings and deprecations go in the
+	 * "write it down and keep going" pile. Fatal errors go in the "stop right here" pile.
+	 * Out of the box Whoops treats both piles as fatal, so one deprecation buried in some
+	 * plugin's vendor folder blanks the whole site.
+	 *
+	 * This hands the first pile back to PHP, which logs it to debug.log and carries on.
+	 * Whoops only takes over for the second pile, which is the part it's actually good at.
+	 *
+	 * Returning false is what hands it back. Whoops' own silenceErrorsInPaths() returns
+	 * true instead, which tells PHP the error is already dealt with, so it never gets
+	 * logged at all. Losing errors silently in a debugging plugin is worse than the crash.
+	 *
+	 * Uncaught exceptions and genuine fatals still get the full Whoops page. Those come in
+	 * through its exception and shutdown handlers, and neither one is replaced here.
+	 */
+	set_error_handler(
+		function ( $level, $message, $file = null, $line = null ) use ( $whoops ) {
+			$fatal = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR;
+
+			if ( $level & $fatal ) {
+				return $whoops->handleError( $level, $message, $file, $line );
+			}
+
+			// Hand back to PHP so it logs as usual, and keep rendering.
+			return false;
+		}
+	);
 }
 
 /**
  * Force deactivate plugin with query parameter.
+ *
+ * template_redirect only fires from wp-includes/template-loader.php, which only wp-blog-header.php
+ * pulls in, so this works on front end URLs and never inside wp-admin. Use `?maidebugger=off` if
+ * you just want to get through one broken admin screen.
  *
  * @return void
  */
@@ -47,8 +111,10 @@ add_action( 'template_redirect', function() {
 	// Deactivate plugin.
 	deactivate_plugins( 'mai-debugger/mai-debugger.php' );
 
-	// Redirect to same page without any query parameters.
-	wp_safe_redirect( home_url( add_query_arg( [] ) ) );
+	// Redirect to the same page with our own query arg dropped, leaving any others alone.
+	// add_query_arg( [] ) was doing the opposite: it returns the current URI untouched, so the
+	// redirect landed back on ?maidebugger=deactivate.
+	wp_safe_redirect( home_url( remove_query_arg( 'maidebugger' ) ) );
 	exit();
 });
 
